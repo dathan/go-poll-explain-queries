@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"time"
 
@@ -118,6 +119,9 @@ func pollProcessList(ctx context.Context, wg *sync.WaitGroup, db *sql.DB) {
 				// If the query has been running for more than 2 seconds, run EXPLAIN
 				if process.Time > 2 && process.Info.Valid {
 					utils.PrettyPrint(process)
+					if strings.Contains(process.Info.String, "SHOW ") {
+						continue
+					}
 					query := fmt.Sprintf("EXPLAIN %s", process.Info.String)
 					explain, err := db.Query(query)
 					if err != nil {
