@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"sync"
 	"time"
 
 	"github.com/dathan/go-poll-explain-queries/pkg/utils"
@@ -58,7 +59,12 @@ func main() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 
+	var wg sync.WaitGroup
+	wg.Add(2) // We have 2 goroutines
+
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s", os.Getenv("MYSQL_USERNAME"), os.Getenv("MYSQL_PASSWORD"), os.Getenv("MYSQL_HOST"), os.Getenv("MYSQL_DATABASE"))
+
+	fmt.Printf("Connecting ... to %s\n", dsn)
 
 	// Connect to the MySQL server
 	db, err := sql.Open("mysql", dsn)
@@ -68,11 +74,12 @@ func main() {
 	defer db.Close()
 
 	go func() {
+		defer wg.Done()
 		for {
 			select {
 			case <-c:
-				fmt.Println("Quitting...")
-				os.Exit(0)
+				fmt.Println("Quitting... processlist")
+				return
 			default:
 				// Poll the processlist
 				rows, err := db.Query("SHOW FULL PROCESSLIST")
@@ -114,9 +121,15 @@ func main() {
 	}()
 
 	go func() {
+		defer wg.Done()
 		for {
-			// Construct and execute the query
-			rows, err := db.Query(`
+			select {
+			case <-c:
+				fmt.Println("Quitting... lock detector")
+				return
+			default:
+				// Construct and execute the query
+				rows, err := db.Query(`
 				SELECT   
 					th.PROCESSLIST_ID,   
 					th.NAME,   
@@ -124,8 +137,6 @@ func main() {
 					th.PROCESSLIST_STATE,   
 					th.PROCESSLIST_INFO,   
 					th.PROCESSLIST_TIME,   
-					dl.ENGINE,   
-					dl.ENGINE_LOCK_ID,   
 					dl.OBJECT_SCHEMA,   
 					dl.OBJECT_NAME,   
 					dl.LOCK_MODE,   
@@ -138,49 +149,51 @@ func main() {
 				LEFT JOIN   
 					performance_schema.data_lock_waits AS dlw ON   dl.ENGINE_LOCK_ID = dlw.BLOCKING_ENGINE_LOCK_ID 
 				WHERE   
-					dl.LOCK_STATUS = 'GRANTED' 
+					dl.LOCK_STATUS = 'GRANTED' AND th.PROCESSLIST_INFO IS NOT NULL
 				GROUP BY   
-					dl.ENGINE_LOCK_ID;
+					dl.ENGINE_LOCK_ID
 			`)
-			if err != nil {
-				panic(err)
-			}
-
-			// Iterate over the rows
-			for rows.Next() {
-				var result QueryResult
-				err := rows.Scan(
-					&result.ProcessListId,
-					&result.Name,
-					&result.Type,
-					&result.ProcessListState,
-					&result.ProcessListInfo,
-					&result.ProcessListTime,
-					&result.Engine,
-					&result.EngineLockId,
-					&result.ObjectSchema,
-					&result.ObjectName,
-					&result.LockMode,
-					&result.LockStatus,
-					&result.WaitingThreads,
-				)
 				if err != nil {
 					panic(err)
 				}
 
-				// Print the result if the conditions are met
-				if result.ProcessListTime >= 3 || result.WaitingThreads >= 2 {
-					utils.PrettyPrint(result)
-				}
-			}
+				// Iterate over the rows
+				for rows.Next() {
+					var result QueryResult
+					err := rows.Scan(
+						&result.ProcessListId,
+						&result.Name,
+						&result.Type,
+						&result.ProcessListState,
+						&result.ProcessListInfo,
+						&result.ProcessListTime,
+						&result.ObjectSchema,
+						&result.ObjectName,
+						&result.LockMode,
+						&result.LockStatus,
+						&result.WaitingThreads,
+					)
+					if err != nil {
+						panic(err)
+					}
 
-			// Sleep for 10 seconds before the next iteration
-			time.Sleep(10 * time.Second)
+					// Print the result if the conditions are met
+					if result.ProcessListTime >= 3 || result.WaitingThreads >= 2 {
+						utils.PrettyPrint(result)
+					}
+				}
+
+				// Sleep for 10 seconds before the next iteration
+				time.Sleep(10 * time.Second)
+			}
 		}
 	}()
 
 	// Block the main thread until an interrupt signal is received
-	for {
-		time.Sleep(1 * time.Second)
-	}
+	<-c
+	// We received an interrupt signal, now wait for both goroutines to finish
+	wg.Wait()
+	// Both goroutines have finished, now we can exit
+	fmt.Println("Both goroutines have shut down, exiting...")
+	os.Exit(0)
 }
