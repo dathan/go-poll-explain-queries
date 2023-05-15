@@ -66,16 +66,20 @@ func (c *Config) PollProcessList() {
 
 				// If the query has been running for more than 2 seconds, run EXPLAIN
 				if process.Time > c.SlowThreshold && process.Info.Valid {
-					utils.PrettyPrint(process)
 					hitCounter++
 					if strings.Contains(process.Info.String, "SHOW ") {
 						continue
 					}
+
+					fmt.Printf("SLOW QUERY LIST\n")
+					utils.PrettyPrint(process)
+
 					query := fmt.Sprintf("EXPLAIN %s", process.Info.String)
 					explain, err := db.Query(query)
 					if err != nil {
 						panic(err)
 					}
+
 					for explain.Next() {
 						// Print the output of the EXPLAIN query
 						var output Explain
@@ -83,14 +87,22 @@ func (c *Config) PollProcessList() {
 						if err != nil {
 							panic(err)
 						}
-						utils.PrettyPrint(output)
+					}
+
+					if c.KillSlow {
+						_, err = db.Exec(fmt.Sprintf("KILL %s", process.Id))
+						if err != nil {
+							panic(err)
+						}
+						fmt.Printf("Killing process\n")
+						utils.PrettyPrint(process)
 					}
 				}
 			}
 
 			if hitCounter > c.DetermineLocksAt {
 				c.wg.Add(1)
-				go detectLocksDo(db)
+				go detectLocksDo(c.ctx, c.wg, db)
 			}
 
 			time.Sleep(1 * time.Second)

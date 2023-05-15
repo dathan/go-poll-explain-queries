@@ -42,8 +42,8 @@ type QueryResult struct {
 	WaitingThreads   int
 }
 
-func detectLocksDo(db *sql.DB) {
-
+func detectLocksDo(ctx context.Context, wg *sync.WaitGroup, db *sql.DB) {
+	defer wg.Done()
 	rows, err := db.Query(`
 				SELECT   
 					th.PROCESSLIST_ID,   
@@ -101,7 +101,7 @@ func detectLocksDo(db *sql.DB) {
 }
 
 // detect locks and print them out
-func detectLocks(ctx context.Context, wg *sync.WaitGroup, db *sql.DB) {
+func detectLocksLoop(ctx context.Context, wg *sync.WaitGroup, db *sql.DB) {
 	defer wg.Done()
 	for {
 		select {
@@ -110,7 +110,7 @@ func detectLocks(ctx context.Context, wg *sync.WaitGroup, db *sql.DB) {
 			return
 		default:
 			// Construct and execute the query
-			detectLocksDo(db)
+			detectLocksDo(ctx, wg, db)
 			// Sleep for 10 seconds before the next iteration
 			time.Sleep(10 * time.Second)
 		}
