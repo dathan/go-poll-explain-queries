@@ -30,11 +30,12 @@ type Config struct {
 	SlowThreshold    int
 	DetermineLocksAt int
 	KillSlow         bool
+	Batch            bool
 }
 
-func NewHealth(ctx context.Context, wg *sync.WaitGroup, slow int, locks int, kill bool) *Config {
+func NewHealth(ctx context.Context, wg *sync.WaitGroup, slow int, locks int, kill bool, batchMode bool) *Config {
 	return &Config{
-		ctx, wg, slow, locks, kill,
+		ctx, wg, slow, locks, kill, batchMode,
 	}
 }
 
@@ -103,6 +104,11 @@ func (c *Config) PollProcessList() {
 			if hitCounter > c.DetermineLocksAt {
 				c.wg.Add(1)
 				go detectLocksDo(c.ctx, c.wg, db)
+			}
+
+			if c.Batch {
+				fmt.Printf("Exiting...")
+				return
 			}
 
 			time.Sleep(1 * time.Second)

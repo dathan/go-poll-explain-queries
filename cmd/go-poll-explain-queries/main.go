@@ -31,10 +31,10 @@ func main() {
 	kill := flag.Bool("kill", false, "kill any slow query that by passes the slowis threshold")
 	slowis := flag.Int("slowis", 10, "slowis the threshold in seconds that a query needs to take for it to be considered slow")
 	lockThreshold := flag.Int("lock_threshold", 7, "lock_threshold is the number of processes that are slow before we issue a query to determine what is locking") // set to 0 to disable
-
+	batchMode := flag.Bool("batch", true, "Only run this application once, do not act a daemon")
 	flag.Parse()
 
-	poll := db_health.NewHealth(ctx, &wg, *slowis, *lockThreshold, *kill)
+	poll := db_health.NewHealth(ctx, &wg, *slowis, *lockThreshold, *kill, *batchMode)
 	go poll.PollProcessList()
 
 	// Block the main thread until an interrupt signal is received
