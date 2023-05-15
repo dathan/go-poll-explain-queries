@@ -24,13 +24,27 @@ type Process struct {
 	Info    sql.NullString
 }
 
+type Config struct {
+	ctx              context.Context
+	wg               *sync.WaitGroup
+	SlowThreshold    int
+	DetermineLocksAt int
+	KillSlow         bool
+}
+
+func NewHealth(ctx context.Context, wg *sync.WaitGroup, slow int, locks int, kill bool) *Config {
+	return &Config{
+		ctx, wg, slow, locks, kill,
+	}
+}
+
 // poll the processList and explain bad queries
-func PollProcessList(ctx context.Context, wg *sync.WaitGroup) {
-	defer wg.Done()
+func (c *Config) PollProcessList() {
+	defer c.wg.Done()
 	db := db_conn.GetDB()
 	for {
 		select {
-		case <-ctx.Done():
+		case <-c.ctx.Done():
 			fmt.Println("Quitting... processlist")
 			return
 		default:
@@ -51,7 +65,7 @@ func PollProcessList(ctx context.Context, wg *sync.WaitGroup) {
 				}
 
 				// If the query has been running for more than 2 seconds, run EXPLAIN
-				if process.Time > 2 && process.Info.Valid {
+				if process.Time > c.SlowThreshold && process.Info.Valid {
 					utils.PrettyPrint(process)
 					hitCounter++
 					if strings.Contains(process.Info.String, "SHOW ") {
@@ -74,8 +88,8 @@ func PollProcessList(ctx context.Context, wg *sync.WaitGroup) {
 				}
 			}
 
-			if hitCounter > 7 {
-				wg.Add(1)
+			if hitCounter > c.DetermineLocksAt {
+				c.wg.Add(1)
 				go detectLocksDo(db)
 			}
 
