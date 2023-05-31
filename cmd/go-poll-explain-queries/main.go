@@ -28,18 +28,19 @@ func main() {
 	}()
 
 	// take in inputs
-	kill := flag.Bool("kill", false, "kill any slow query that by passes the slowis threshold")
+	kill := flag.Bool("kill", false, "kill any slow query that bypasses the slowis threshold")
 	slowis := flag.Int("slowis", 10, "slowis the threshold in seconds that a query needs to take for it to be considered slow")
-	lockThreshold := flag.Int("lock_threshold", 7, "lock_threshold is the number of processes that are slow before we issue a query to determine what is locking") // set to 0 to disable
+	lockThreshold := flag.Int("row_threshold", 1000, "row_threshold is the number of rows in ready to rollback state for a long running transaction")
 	batchMode := flag.Bool("batch", true, "Only run this application once, do not act a daemon")
 	flag.Parse()
 
 	poll := db_health.NewHealth(ctx, &wg, *slowis, *lockThreshold, *kill, *batchMode)
-	go poll.PollProcessList()
+	go poll.PollProcessAndLongRunningTrx()
+	// add the other type of queries below in a go routine with context
 
 	// Block the main thread until an interrupt signal is received
 	wg.Wait()
-	// Both goroutines have finished, now we can exit
-	fmt.Println("Both goroutines have shut down, exiting...")
+	//goroutines have finished, now we can exit
+	fmt.Println("goroutine(s) have shut down, exiting...")
 	os.Exit(0)
 }

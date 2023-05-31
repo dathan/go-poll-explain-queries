@@ -14,6 +14,7 @@ var (
 	once sync.Once
 )
 
+// this is an ondemand singleton
 func setupDB() error {
 	var err error
 	once.Do(func() {
