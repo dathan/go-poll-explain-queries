@@ -29,7 +29,7 @@ func main() {
 
 	// take in inputs
 	kill := flag.Bool("kill", false, "kill any slow query that bypasses the slowis threshold")
-	slowis := flag.Int("slowis", 10, "slowis the threshold in seconds that a query needs to take for it to be considered slow")
+	slowis := flag.Int("slowis", 600, "slowis the threshold in seconds that a query needs to take for it to be considered slow")
 	lockThreshold := flag.Int("row_threshold", 1000, "row_threshold is the number of rows in ready to rollback state for a long running transaction")
 	batchMode := flag.Bool("batch", true, "Only run this application once, do not act a daemon")
 	flag.Parse()
