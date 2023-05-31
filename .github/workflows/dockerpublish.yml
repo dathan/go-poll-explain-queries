@@ -18,26 +18,8 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  # Push image to GitHub Packages.
-  # See also https://docs.docker.com/docker-hub/builds/
-  build:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push'
 
-    steps:
-      #needed to access private repos with ssh
-      # - uses: shimataro/ssh-key-action@v2.0.1
-      #  with:
-      #    key: ${{ secrets.SSH_PRIV_KEY }}
-      #    known_hosts: ${{ secrets.KNOWN_HOSTS }}
-      #    name: id_rsa # optional
-      
-      - uses: actions/checkout@v2
-
-      - name: Build Container
-        run: make docker-build
-
-  publish:
+  build_and_publish:
     runs-on: ubuntu-latest
 
     steps:
