@@ -1,7 +1,7 @@
 # Go parameters
 BINARY_NAME=go-poll-explain-queries
 BINARY_UNIX=$(BINARY_NAME)_unix
-REPO=docker.pkg.github.com/dathan/go-poll-explain-queries/go-poll-explain-queries
+REPO=ghcr.io/dathan/go-poll-explain-queries/go-poll-explain-queries
 
 .PHONY: all
 all: lint test build
