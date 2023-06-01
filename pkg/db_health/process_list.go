@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"strings"
 	"sync"
 	"time"
@@ -54,7 +55,7 @@ func (c *Config) PollProcessAndLongRunningTrx() {
 	for {
 		select {
 		case <-c.ctx.Done():
-			fmt.Println("Quitting... processlist")
+			log.Println("Quitting... processlist")
 			return
 		default:
 			// side effect and look at locks when a threshold is met each loop it resets
@@ -77,10 +78,6 @@ func (c *Config) PollProcessAndLongRunningTrx() {
 				// If the query has been running for more than 2 seconds, run EXPLAIN
 				if process.Trx_duration_seconds > c.SlowThreshold && process.Info.Valid {
 					hitCounter++
-					if strings.Contains(process.Info.String, "SHOW ") {
-						continue
-					}
-
 					utils.PrettyPrint(process)
 					if process.Info.Valid {
 						query := fmt.Sprintf("EXPLAIN %s", process.Info.String)
@@ -101,11 +98,11 @@ func (c *Config) PollProcessAndLongRunningTrx() {
 					}
 
 					if c.KillSlow {
-						_, err = db.Exec(fmt.Sprintf("KILL %s", process.Id))
+						_, err = db.Exec(fmt.Sprintf("KILL %d", process.Id))
 						if err != nil {
 							panic(err)
 						}
-						utils.PrettyPrint(process)
+						utils.PrettyPrint(fmt.Sprintf("KILL %d", process.Id))
 					}
 				}
 			}
@@ -117,7 +114,7 @@ func (c *Config) PollProcessAndLongRunningTrx() {
 			*/
 
 			if c.Batch {
-				fmt.Printf("Exiting...")
+				log.Println("Exiting... transaction list")
 				return
 			}
 
@@ -133,7 +130,7 @@ func (c *Config) PollProcessList() {
 	for {
 		select {
 		case <-c.ctx.Done():
-			fmt.Println("Quitting... processlist")
+			log.Println("Quitting... processlist")
 			return
 		default:
 			// side effect and look at locks when a threshold is met each loop it resets
@@ -177,11 +174,11 @@ func (c *Config) PollProcessList() {
 					}
 
 					if c.KillSlow {
-						_, err = db.Exec(fmt.Sprintf("KILL %s", process.Id))
+						_, err = db.Exec(fmt.Sprintf("KILL %d", process.Id))
 						if err != nil {
 							panic(err)
 						}
-						utils.PrettyPrint(process)
+						utils.PrettyPrint(fmt.Sprintf("KILL %d", process.Id))
 					}
 				}
 			}
@@ -193,7 +190,7 @@ func (c *Config) PollProcessList() {
 			*/
 
 			if c.Batch {
-				fmt.Printf("Exiting...")
+				log.Println("Exiting... processlist")
 				return
 			}
 

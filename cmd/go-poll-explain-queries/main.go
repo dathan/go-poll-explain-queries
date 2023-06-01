@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"sync"
@@ -20,7 +20,6 @@ func main() {
 	// Create a context that we can cancel
 	ctx, cancel := context.WithCancel(context.Background())
 	var wg sync.WaitGroup
-	wg.Add(1)
 	go func() {
 		// Listen for the interrupt signal, and when it's received, cancel the context
 		<-c
@@ -35,12 +34,15 @@ func main() {
 	flag.Parse()
 
 	poll := db_health.NewHealth(ctx, &wg, *slowis, *lockThreshold, *kill, *batchMode)
+	wg.Add(1)
 	go poll.PollProcessAndLongRunningTrx()
+	wg.Add(1)
+	go poll.PollProcessList()
 	// add the other type of queries below in a go routine with context
 
 	// Block the main thread until an interrupt signal is received
 	wg.Wait()
 	//goroutines have finished, now we can exit
-	fmt.Println("goroutine(s) have shut down, exiting...")
+	log.Println("goroutine(s) have shut down, exiting...")
 	os.Exit(0)
 }
