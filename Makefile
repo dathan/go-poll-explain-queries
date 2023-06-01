@@ -34,7 +34,7 @@ vendor:
 # Cross compilation
 .PHONY: build-linux
 build-linux:
-				CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/$(BINARY_UNIX) -v cmd/$(BINARY_NAME)/
+				CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/$(BINARY_UNIX) -v cmd/$(BINARY_NAME)/*.go
 
 # Build docker containers
 .PHONY: docker-build
