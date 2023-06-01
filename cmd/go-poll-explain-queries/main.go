@@ -36,9 +36,9 @@ func main() {
 	poll := db_health.NewHealth(ctx, &wg, *slowis, *lockThreshold, *kill, *batchMode)
 	wg.Add(1)
 	go poll.PollProcessAndLongRunningTrx()
-	wg.Add(1)
-	go poll.PollProcessList()
 	// add the other type of queries below in a go routine with context
+	//wg.Add(1)
+	//go poll.PollProcessList()
 
 	// Block the main thread until an interrupt signal is received
 	wg.Wait()
