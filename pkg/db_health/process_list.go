@@ -62,7 +62,7 @@ func (c *Config) PollProcessAndLongRunningTrx() {
 			// side effect and look at locks when a threshold is met each loop it resets
 			hitCounter := 0
 			// Poll the processlist
-			query := fmt.Sprintf("SELECT proc.*, trx.trx_id, trx.trx_started, trx.trx_mysql_thread_id, trx.trx_rows_modified, TIMESTAMPDIFF(SECOND, trx.trx_started, NOW()) AS trx_duration_seconds FROM  information_schema.innodb_trx AS trx JOIN information_schema.processlist AS proc ON     trx.trx_mysql_thread_id = proc.ID WHERE trx.trx_started  > NOW() - INTERVAL %d SECOND AND trx.trx_rows_modified > %d ORDER BY  trx.trx_started ASC, trx.trx_rows_modified DESC LIMIT %d", c.SlowThreshold, c.RowsThreshold, 100)
+			query := fmt.Sprintf("SELECT proc.*, trx.trx_id, trx.trx_started, trx.trx_mysql_thread_id, trx.trx_rows_modified, TIMESTAMPDIFF(SECOND, trx.trx_started, NOW()) AS trx_duration_seconds FROM  information_schema.innodb_trx AS trx JOIN information_schema.processlist AS proc ON trx.trx_mysql_thread_id = proc.ID WHERE trx.trx_started  < NOW() - INTERVAL %d SECOND AND trx.trx_rows_modified > %d ORDER BY  trx.trx_started ASC, trx.trx_rows_modified DESC LIMIT %d", c.SlowThreshold, c.RowsThreshold, 100)
 			rows, err := db.Query(query)
 			if err != nil {
 				panic(err)
@@ -128,6 +128,10 @@ func (c *Config) PollProcessAndLongRunningTrx() {
 
 // print a summary of process information
 func (c *Config) PrintProcessSummary(l []LongRunningTrx) {
+	if len(l) == 0 {
+		return
+	}
+
 	maxTranactionTime := 0
 	maxUndo := 0
 	maxLastStatement := ""

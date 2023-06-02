@@ -37,7 +37,6 @@ func setupDB() error {
 		if err != nil {
 			db = nil
 		}
-
 	})
 
 	return err
