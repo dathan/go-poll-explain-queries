@@ -142,11 +142,12 @@ func (c *Config) PrintProcessSummary(l []LongRunningTrx) {
 		}
 
 		sumOfUndos += row.Trx_rows_modified
-		sumOfTransactionTime = row.Trx_duration_seconds
+		sumOfTransactionTime += row.Trx_duration_seconds
 	}
 
-	utils.PrettyPrint([]string{fmt.Sprintf("MaxTransactionTime: %d seconds", maxTranactionTime), fmt.Sprintf("MaxUndos: %d rows", maxUndo), fmt.Sprintf("Last Statement: %s", maxLastStatement)})
-	utils.PrettyPrint([]string{fmt.Sprintf("SUM Rows ready for Undo: %d rows", sumOfUndos), fmt.Sprintf("Sum of Transaction Time: %d seconds", sumOfTransactionTime)})
+	utils.PrettyPrint([]string{fmt.Sprintf("MaxTransactionTime: %d seconds", maxTranactionTime), fmt.Sprintf("MaxUndos: %d rows", maxUndo), fmt.Sprintf("Last MAX Transaction Statement captured: %s", maxLastStatement)})
+	utils.PrettyPrint([]string{fmt.Sprintf("SUM Rows ready for Undo: %d rows", sumOfUndos), fmt.Sprintf("SUM of Transaction Time: %d seconds", sumOfTransactionTime)})
+	utils.PrettyPrint([]interface{}{fmt.Sprintf("CAPTURED ACTIVE TRANSACTIONS: (%d)", len(l)), l})
 }
 
 // poll the processList and explain bad queries
