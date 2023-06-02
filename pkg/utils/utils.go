@@ -2,15 +2,16 @@ package utils
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 )
 
-func PrettyPrint(data interface{}) {
-	jsonData, err := json.MarshalIndent(data, "", "  ")
-	if err != nil {
-		log.Println("Error marshaling data:", err)
-		return
+func PrettyPrint(values ...interface{}) { // use variadic parameters
+	for _, value := range values {
+		prettyData, err := json.MarshalIndent(value, "", "  ")
+		if err != nil {
+			log.Printf("Error pretty printing data: %v", err)
+			continue
+		}
+		log.Printf("\n%s\n", prettyData)
 	}
-	fmt.Println(string(jsonData))
 }

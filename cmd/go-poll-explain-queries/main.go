@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"flag"
-	"log"
 	"os"
 	"os/signal"
 	"sync"
@@ -31,18 +30,18 @@ func main() {
 	slowis := flag.Int("slowis", 600, "slowis the threshold in seconds that a query needs to take for it to be considered slow")
 	rowThreshold := flag.Int("row_threshold", 1000, "row_threshold is the number of rows in ready to rollback state for a long running transaction")
 	batchMode := flag.Bool("batch", true, "Only run this application once, do not act a daemon")
+	verbose := flag.Bool("verbose", false, "Show some verbose stats")
 	flag.Parse()
 
-	poll := db_health.NewHealth(ctx, &wg, *slowis, *rowThreshold, *kill, *batchMode)
+	poll := db_health.NewHealth(ctx, &wg, *slowis, *rowThreshold, *kill, *batchMode, *verbose)
 	wg.Add(1)
 	go poll.PollProcessAndLongRunningTrx()
 	// add the other type of queries below in a go routine with context
-	//wg.Add(1)
-	//go poll.PollProcessList()
+	// wg.Add(1)
+	// go poll.PollProcessList()
 
 	// Block the main thread until an interrupt signal is received
 	wg.Wait()
-	//goroutines have finished, now we can exit
-	log.Println("goroutine(s) have shut down, exiting...")
+	// goroutines have finished, now we can exit
 	os.Exit(0)
 }
