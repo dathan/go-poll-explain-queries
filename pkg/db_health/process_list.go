@@ -76,7 +76,7 @@ func (c *Config) PollProcessAndLongRunningTrx() {
 				}
 
 				// If the query has been running for more than 2 seconds, run EXPLAIN
-				if process.Trx_duration_seconds > c.SlowThreshold && process.Info.Valid {
+				if process.Trx_duration_seconds > c.SlowThreshold {
 					hitCounter++
 					utils.PrettyPrint(process)
 					if process.Info.Valid {
