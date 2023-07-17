@@ -84,7 +84,7 @@ func (c *Config) PollProcessAndLongRunningTrx() {
 
 					utils.PrettyPrint([]interface{}{fmt.Sprintf("Long running Tranaction threshold of %d hit", c.SlowThreshold), process})
 
-					if process.Info.Valid {
+					if  process.Info.Valid {
 						query := fmt.Sprintf("EXPLAIN %s", process.Info.String)
 						explain, err := db.Query(query)
 						if err != nil {
